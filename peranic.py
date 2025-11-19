@@ -5,9 +5,10 @@ import time
 import numpy as np
 from qmi.core.context import QMI_Context
 from qmi.instruments.thorlabs.mpc320 import Thorlabs_Mpc320
+import serial.tools.list_ports
 
 # --- CONFIGURAÇÕES DO HARDWARE ---
-COM_PORT = "serial:COM11"
+COM_PORT = None
 PADDLES = [1, 2, 3]
 
 # --- CONFIGURAÇÕES DO ALGORITMO ---
@@ -173,7 +174,7 @@ class PolarizationCompensator:
                 return True
             
             # 4. Se falhar, reduzir threshold 
-            current_threshold -= THRESHOLD_REDUCTION_STEP 
+            current_threshold -= THRESHOLD_REDUCTION_STEP
             print(f"    ! Falha na tentativa. Reduzindo alvo para {current_threshold:.1%}")
 
         return False
@@ -218,6 +219,12 @@ class PolarizationCompensator:
 #  EXECUÇÃO PRINCIPAL
 # =================================================================
 def main():
+    ports = serial.tools.list_ports.comports()
+    for port in ports:
+        if port.manufacturer == "Thorlabs":
+            COM_PORT = f"serial:{port.device}"
+            print(f"MPC320 detectado na porta: {COM_PORT}")
+
     qmi_context = QMI_Context("polarization_control")
     qmi_context.start()
     
