@@ -53,13 +53,19 @@ class PolarizationCompensator:
     def move_paddle(self, paddle_idx, angle):
         """Move para angulo absoluto com espera."""
         # Garante limites de 0 a 170 (ou 360 dependendo do modelo, ajuste se necessário)
-        target = angle % 170 
-        self.mpc.move_absolute(paddle_idx, target)
+        if angle > 170 or angle < 0:
+            raise ValueError(f"Ângulo {angle} fora dos limites (0-170)")
+        
+        self.mpc.move_absolute(paddle_idx, angle)
         time.sleep(0.3) # Tempo para o motor chegar
+        
 
     def move_relative(self, paddle_idx, delta):
         curr = self.get_angle(paddle_idx)
-        self.move_paddle(paddle_idx, curr + delta)
+        try:
+            self.move_paddle(paddle_idx, curr + delta)
+        except ValueError as e:
+            print(f"  [AVISO] Movimento relativo fora dos limites: {e}")
 
     # LÓGICA DO ALGORITMO
 
