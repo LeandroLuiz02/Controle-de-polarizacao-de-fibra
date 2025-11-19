@@ -229,7 +229,7 @@ def autodetect_serial_port(vid, pid):
             return f"serial:{port.device}"
     return None
 
-def connect(device_vid, device_pid, device_name):
+def get_port(device_vid, device_pid, device_name):
     port = autodetect_serial_port(device_vid, device_pid)
     if not port:
         raise ConnectionError(f"{device_name} não detectado. Verifique a conexão.")
@@ -239,8 +239,7 @@ def connect(device_vid, device_pid, device_name):
 #  EXECUÇÃO PRINCIPAL
 # =================================================================
 def main():
-    global COM_PORT # fora do escopo
-    COM_PORT = connect(MPC320_VID, MPC320_PID, "MPC320")
+    COM_PORT = get_port(MPC320_VID, MPC320_PID, "MPC320")
 
     qmi_context = QMI_Context("polarization_control")
     qmi_context.start()
