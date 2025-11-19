@@ -221,7 +221,7 @@ class PolarizationCompensator:
 def main():
     ports = serial.tools.list_ports.comports()
     for port in ports:
-        if port.manufacturer == "Thorlabs":
+        if port.vid == 1027 and port.pid == 64240: # MPC320 da Thorlabs
             COM_PORT = f"serial:{port.device}"
             print(f"MPC320 detectado na porta: {COM_PORT}")
 
