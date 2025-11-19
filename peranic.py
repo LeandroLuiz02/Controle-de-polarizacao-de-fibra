@@ -16,7 +16,8 @@ TARGET_VIS_DA = 0.98       # 98% para base DA
 TARGET_VIS_GLOBAL = 0.95   # Média das duas
 MAX_GLOBAL_RETRIES = 10    # 
 MAX_BASE_RETRIES = 4       # 
-INITIAL_TEST_ANGLE = 10    # Graus para testar impacto 
+INITIAL_TEST_ANGLE = 10    # Graus para testar impacto
+THRESHOLD_REDUCTION_STEP = 0.002  # Redução de 0.2% se falhar
 
 class PolarizationCompensator:
     def __init__(self, mpc_instrument):
@@ -100,7 +101,7 @@ class PolarizationCompensator:
         best_ang = self.get_angle(paddle)
         
         # Varredura grosseira (ex: de 0 a 170 em passos de 20)
-        # Para produção, um algoritmo de busca (Nelder-Mead ou Gradiente) seria mais rápido
+        # TODO: Para produção, um algoritmo de busca (Nelder-Mead ou Gradiente) seria mais rápido
         for ang in range(0, 170, 20):
             self.move_paddle(paddle, ang)
             vis = self.measure_visibility(basis)
@@ -172,7 +173,7 @@ class PolarizationCompensator:
                 return True
             
             # 4. Se falhar, reduzir threshold 
-            current_threshold -= 0.002 
+            current_threshold -= THRESHOLD_REDUCTION_STEP 
             print(f"    ! Falha na tentativa. Reduzindo alvo para {current_threshold:.1%}")
 
         return False
