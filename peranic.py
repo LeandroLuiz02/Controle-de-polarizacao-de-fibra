@@ -6,6 +6,7 @@ import numpy as np
 from qmi.core.context import QMI_Context
 from qmi.instruments.thorlabs.mpc320 import Thorlabs_Mpc320
 import serial.tools.list_ports
+from tools.utils import get_port
 
 # --- CONFIGURAÇÕES DO HARDWARE ---
 COM_PORT = None
@@ -218,22 +219,6 @@ class PolarizationCompensator:
         
         print("=== FALHA: Não foi possível atingir os critérios após 10 ciclos. ===")
         return False
-
-# -- utils ------------------------------------------------
-#TODO: mover para utils.py (refactor)
-def autodetect_serial_port(vid, pid):
-    """Tenta detectar automaticamente a porta COM do dispositivo conectado."""
-    ports = serial.tools.list_ports.comports()
-    for port in ports:
-        if port.vid == vid and port.pid == pid:
-            return f"serial:{port.device}"
-    return None
-
-def get_port(device_vid, device_pid, device_name):
-    port = autodetect_serial_port(device_vid, device_pid)
-    if not port:
-        raise ConnectionError(f"{device_name} não detectado. Verifique a conexão.")
-    return port
 
 # =================================================================
 #  EXECUÇÃO PRINCIPAL
