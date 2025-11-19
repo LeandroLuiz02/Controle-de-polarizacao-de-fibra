@@ -20,6 +20,10 @@ MAX_BASE_RETRIES = 4       #
 INITIAL_TEST_ANGLE = 10    # Graus para testar impacto
 THRESHOLD_REDUCTION_STEP = 0.002  # Redução de 0.2% se falhar
 
+# -- IDENTIFICADORES DE DISPOSITIVOS USB ---
+MPC320_VID = 1027
+MPC320_PID = 64240
+
 class PolarizationCompensator:
     def __init__(self, mpc_instrument):
         self.mpc = mpc_instrument
@@ -215,15 +219,28 @@ class PolarizationCompensator:
         print("=== FALHA: Não foi possível atingir os critérios após 10 ciclos. ===")
         return False
 
+# -- utils ------------------------------------------------
+#TODO: mover para utils.py (refactor)
+def autodetect_serial_port(vid, pid):
+    """Tenta detectar automaticamente a porta COM do dispositivo conectado."""
+    ports = serial.tools.list_ports.comports()
+    for port in ports:
+        if port.vid == vid and port.pid == pid:
+            return f"serial:{port.device}"
+    return None
+
+def connect(device_vid, device_pid, device_name):
+    port = autodetect_serial_port(device_vid, device_pid)
+    if not port:
+        raise ConnectionError(f"{device_name} não detectado. Verifique a conexão.")
+    return port
+
 # =================================================================
 #  EXECUÇÃO PRINCIPAL
 # =================================================================
 def main():
-    ports = serial.tools.list_ports.comports()
-    for port in ports:
-        if port.vid == 1027 and port.pid == 64240: # MPC320 da Thorlabs
-            COM_PORT = f"serial:{port.device}"
-            print(f"MPC320 detectado na porta: {COM_PORT}")
+    global COM_PORT # fora do escopo
+    COM_PORT = connect(MPC320_VID, MPC320_PID, "MPC320")
 
     qmi_context = QMI_Context("polarization_control")
     qmi_context.start()
