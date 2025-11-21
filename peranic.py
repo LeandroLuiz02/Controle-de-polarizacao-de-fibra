@@ -5,7 +5,6 @@ import time
 import numpy as np
 from qmi.core.context import QMI_Context
 from qmi.instruments.thorlabs.mpc320 import Thorlabs_Mpc320
-import serial.tools.list_ports
 from tools.utils import get_port
 
 # --- CONFIGURAÇÕES DO HARDWARE ---
