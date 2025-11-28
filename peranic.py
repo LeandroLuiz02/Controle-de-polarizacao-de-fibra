@@ -1,15 +1,19 @@
 # Trabalho de referência: A study of polarization compensation for quantum networks
 # link: https://arxiv.org/pdf/2208.13584
 
+import serial
 import time
+import threading
 import numpy as np
 from qmi.core.context import QMI_Context
 from qmi.instruments.thorlabs.mpc320 import Thorlabs_Mpc320
-from tools.utils import get_port
+from tools.utils import get_port, read_serial
+
 
 # --- CONFIGURAÇÕES DO HARDWARE ---
 COM_PORT = None
 PADDLES = [1, 2, 3]
+ARDUINO_BAUDRATE = 1000000
 
 # --- CONFIGURAÇÕES DO ALGORITMO ---
 TARGET_VIS_HV = 0.95       # 95% para base HV
@@ -23,6 +27,8 @@ THRESHOLD_REDUCTION_STEP = 0.002  # Redução de 0.2% se falhar
 # -- IDENTIFICADORES DE DISPOSITIVOS USB ---
 MPC320_VID = 1027
 MPC320_PID = 64240
+ARDUINO_VID = 9025
+ARDUINO_PID = 614
 
 class PolarizationCompensator:
     def __init__(self, mpc_instrument):
@@ -30,6 +36,7 @@ class PolarizationCompensator:
 
     # =================================================================
     #  TODO: INTEGRAÇÃO COM DETECTORES
+    #  TODO: REMOVER TROCA DE BASE
     # =================================================================
     
     def switch_basis(self, basis: str):
@@ -223,10 +230,25 @@ class PolarizationCompensator:
 #  EXECUÇÃO PRINCIPAL
 # =================================================================
 def main():
+
+    # Conexão com os dispositivos
     COM_PORT = get_port(MPC320_VID, MPC320_PID, "MPC320")
+    ARDUINO_PORT = get_port(ARDUINO_VID, ARDUINO_PID, "Arduino")
+
+    print(f"MPC320 detectado na porta: {COM_PORT}")
+    print(f"Arduino detectado na porta: {ARDUINO_PORT}")
+
+    ARDUINO_PORT = ARDUINO_PORT.replace("serial:", "")
 
     qmi_context = QMI_Context("polarization_control")
     qmi_context.start()
+
+    try:
+        arduino_serial = serial.Serial(ARDUINO_PORT, ARDUINO_BAUDRATE, timeout=1)
+        time.sleep(2)  # Aguarda inicialização da conexão serial
+    except serial.SerialException as e:
+        print(f"Erro ao abrir a porta serial do Arduino: {e}")
+        return
     
     mpc = None
     try:
@@ -239,7 +261,14 @@ def main():
 
         # Instancia e roda o compensador
         compensator = PolarizationCompensator(mpc)
-        compensator.run_full_algorithm()
+
+        stop_event = threading.Event()
+
+        thread1 = threading.Thread(target=compensator.run_full_algorithm)
+        thread2 = threading.Thread(target=read_serial, args=(stop_event, arduino_serial))
+
+        thread1.start()
+        thread2.start()
 
     except Exception as e:
         print(f"ERRO: {e}")
@@ -247,6 +276,10 @@ def main():
         if mpc: 
             mpc.close()
         qmi_context.stop()
+        stop_event.set()
+        thread1.join()
+        thread2.join()
+        arduino_serial.close()
         print("Conexão encerrada.")
 
 if __name__ == "__main__":
